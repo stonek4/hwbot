@@ -5,6 +5,7 @@ import logging
 import sys
 import os
 import subprocess
+import argparse
 ### GLOBALS ###
 
 ### CONSTANTS ###
@@ -18,6 +19,12 @@ def setup_logging():
 
 def display_options(which):
     #TODO: Support deletes
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", type=str, choices=["exit","open","create","edit","add","delete"], help="the command to be run")
+    parser.add_argument("c_type", nargs='?', type=str, choices=["project","question","squestion","ssquestion", "tmath", "text", "photo"], help="the type to perform the command on")
+    parser.add_argument("name", nargs='?', type=str, help="define the folder or file to perform the action on")
+
+    #if args.command = "create"
     print ("Available Commands: ")
     if (which == 1):
         print ("1 - Create New Assignment")
