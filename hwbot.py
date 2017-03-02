@@ -1,11 +1,11 @@
 ### IMPORTS ###
 from math import *
-from builtins import input
 import logging
 import sys
 import os
 import subprocess
 import argparse
+import shutil
 ### GLOBALS ###
 
 ### CONSTANTS ###
@@ -18,40 +18,37 @@ def setup_logging():
     logging.debug("Logging Started...")
 
 def display_options(which):
-    #TODO: Support deletes
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", type=str, choices=["exit","open","create","edit","add","delete"], help="the command to be run")
-    parser.add_argument("c_type", nargs='?', type=str, choices=["project","question","squestion","ssquestion", "tmath", "text", "photo"], help="the type to perform the command on")
-    parser.add_argument("name", nargs='?', type=str, help="define the folder or file to perform the action on")
+    first_arg = ["create","edit","exit"]
+    second_arg = []
 
-    #if args.command = "create"
-    print ("Available Commands: ")
+    print ("Current Directory: "+os.getcwd())
+    for f in os.listdir("./"):
+        print (f)
+    print ("")
+
     if (which == 1):
-        print ("1 - Create New Assignment")
-        print ("2 - Open An Existing Assignment")
+        second_arg += ["project"]
     if (which >= 2):
-        print ("1 - Create New Question (1.)")
-        print ("2 - Edit a Question")
+        first_arg += ["compile", "delete", "add"]
+        second_arg += ["q", "file"]
         if (which >= 3):
-            print ("3 - Create New Subquestion (a.)")
-            print ("4 - Edit a Subquestion")
+            second_arg += ["sq"]
         if (which >= 4):
-            print ("5 - Create New Sub-Subquestion (i.)")
-            print ("6 - Edit a Sub-Subquestion")
-        print ("7 - Create a MATH File (.math)")
-        print ("8 - Create a TEXT File (.txt)")
-        print ("9 - Add a Picture File (.png)")
-        print ("10 - Edit a file")
-        print ("11 - Compile the assignment (.md)")
+            second_arg += ["ssq"]
 
-    print ("0 - Exit")
-    print ("")
-    print ("Current Directory:",os.getcwd())
-    print ("Files: ")
-    for file in os.listdir("./"):
-        print (file)
-    print ("")
-    return input("Please input a command: ")
+    parser.add_argument("command", type=str, choices=first_arg, help="the command to be run")
+    parser.add_argument("c_type", nargs='?', type=str, choices=second_arg, help="the type to perform the command on")
+    parser.add_argument("name", nargs='?', type=str, help="define the folder name, file number (ex: for Question 1, enter '1'), or path to file")
+    while True:
+        try:
+            input_args = raw_input(" ~hwbot~: ").split(" ")
+            output = parser.parse_args(input_args)
+            break
+        except:
+            print ("")
+
+    return output
 
 def navigate_to(name):
     while True:
@@ -75,6 +72,84 @@ def get_file_number():
             if num > mx:
                 mx = num
     return mx + 1
+
+def get_file(fnum):
+    for dr in os.listdir("./"):
+        if (os.path.isfile("./"+dr)):
+            num = int(dr.split('_')[1].split('.')[0])
+            if (num == fnum):
+                return dr
+    return None
+
+def parse_input(creator, command, option):
+    if command.command == "create":
+        if command.c_type == "project":
+            creator.set_project_name(command.name)
+            creator.create_folder(command.name)
+            option = 2
+        elif command.c_type == "q":
+            name = "Q_" + str(navigate_to(creator.get_project_name()))
+            creator.create_folder(name)
+            option = 3
+        elif command.c_type == "sq":
+            name = "SQ_" + str(navigate_to("Q"))
+            creator.create_folder(name)
+            option = 4
+        elif command.c_type == "ssq":
+            name = "SSQ_" + str(navigate_to("SQ"))
+            creator.create_folder(name)
+            option = 4
+        elif command.c_type == "file":
+            name = "F_" + str(get_file_number()) + "." + command.name
+            creator.create_file(name)
+            creator.open_file(name)
+
+    if command.command == "edit":
+        if command.c_type == "project":
+            creator.set_project_name(command.name)
+            creator.open_folder(command.name)
+            option = 2
+        elif command.c_type == "q":
+            name = "Q_" + command.name
+            navigate_to(creator.get_project_name())
+            creator.open_folder(name)
+            option = 3
+        elif command.c_type == "sq":
+            name = "SQ_" + command.name
+            navigate_to("Q")
+            creator.open_folder(name)
+            option = 4
+        elif command.c_type == "ssq":
+            name = "SSQ_" + command.name
+            navigate_to("SQ")
+            creator.open_folder(name)
+            option = 4
+        elif command.c_type == "file":
+            name = get_file(int(command.name))
+            creator.open_file(name)
+
+    if command.command == "delete":
+        if command.c_type == "q":
+            name = "Q_" + command.name
+            creator.delete_folder(name)
+        elif command.c_type == "sq":
+            name = "SQ_" + command.name
+            creator.delete_folder(name)
+        elif command.c_type == "ssq":
+            name = "SSQ_" + command.name
+            creator.delete_folder(name)
+        elif command.c_type == "file":
+            name = get_file(int(command.name))
+            creator.delete_file(name)
+
+    if command.command == "add":
+        if command.c_type == "file":
+            creator.copy_file(command.name)
+
+    if command.command == "exit":
+        sys.exit(0)
+
+    return option
 
 
 
@@ -101,6 +176,10 @@ class Creator(object):
         if os.path.exists(name):
             os.chdir(name)
 
+    def delete_folder(self, name):
+        if os.path.exists("./"+name):
+            shutil.rmtree("./"+name)
+
     def open_file(self, name):
         if sys.platform.startswith('darwin'):
             subprocess.call(('open', "./"+name))
@@ -113,74 +192,25 @@ class Creator(object):
         if not os.path.exists("./"+name):
             open(name, 'a')
 
+    def delete_file(self, name):
+        if os.path.exists("./"+name):
+            os.remove("./"+name)
 
+    def copy_file(self, name):
+        if os.path.exists(name):
+            shutil.copy2(name, "./")
 
 ### MAIN ###
 def main():
-    command = 1
+    option = 1
     creator = Creator()
-    command = int(display_options(1))
-    while command != 0:
-        if (command == 1):
-            name = input("Please enter the name of the Assignment: ")
-            creator.set_project_name(name)
-            creator.create_folder(name)
-        if (command == 2):
-            name = input("Please enter the name of the Assignment: ")
-            creator.set_project_name(name)
-            creator.open_folder(name)
-        command = int(display_options(2))
-        last_option = 2
-        while command != 0:
-            if (command == 1):
-                name = "Q_" + str(navigate_to(creator.get_project_name()))
-                creator.create_folder(name)
-                command = int(display_options(3))
-                last_option = 3
-            if (command == 2):
-                name = "Q_" + input("Please enter the question number: ")
-                navigate_to(creator.get_project_name())
-                creator.open_folder(name)
-                command = int(display_options(3))
-                last_option = 3
-            if (command == 3):
-                name = "SQ_" + str(navigate_to("Q"))
-                creator.create_folder(name)
-                command = int(display_options(4))
-                last_option = 4
-            if (command == 4):
-                name = "SQ_" + input("Please enter the subquestion number: ")
-                navigate_to("Q")
-                creator.open_folder(name)
-                command = int(display_options(4))
-                last_option = 4
-            if (command == 5):
-                name = "SSQ_" + str(navigate_to("SQ"))
-                creator.create_folder(name)
-                command = int(display_options(4))
-                last_option = 4
-            if (command == 6):
-                name = "SSQ_" + input("Please enter the sub-subquestion number: ")
-                navigate_to("SQ")
-                creator.open_folder(name)
-                command = int(display_options(4))
-                last_option = 4
-            if (command == 7):
-                name = "F_" + str(get_file_number()) + ".math"
-                creator.create_file(name)
-                creator.open_file(name)
-                command = int(display_options(last_option))
-            if (command == 8):
-                name = "F_" + str(get_file_number()) + ".txt"
-                creator.create_file(name)
-                creator.open_file(name)
-                command = int(display_options(last_option))
-            if (command == 9):
-                pass
-            if (command == 10):
-                name = input("Please enter the number of the file: ")
-                creator.open_file(name)
-                command = int(display_options(last_option))
+    command = display_options(option)
+    while True:
+        option = parse_input(creator, command, option)
+        command = display_options(option)
+
+
+
 
 
 
