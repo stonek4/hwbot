@@ -1,11 +1,11 @@
 ### IMPORTS ###
 from math import *
-import logging
-import sys
 import os
-import subprocess
+import sys
+import logging
 import argparse
-import shutil
+from md_compile import Compiler
+from creator import Creator
 ### GLOBALS ###
 
 ### CONSTANTS ###
@@ -42,7 +42,7 @@ def display_options(which):
     parser.add_argument("name", nargs='?', type=str, help="define the folder name, file number (ex: for Question 1, enter '1'), or path to file")
     while True:
         try:
-            input_args = raw_input(" ~hwbot~: ").split(" ")
+            input_args = input(" ~hwbot~: ").split(" ")
             output = parser.parse_args(input_args)
             break
         except:
@@ -80,6 +80,26 @@ def get_file(fnum):
             if (num == fnum):
                 return dr
     return None
+
+def compile(compiler, exclude):
+    file_list = []
+    dir_list = []
+    for dr in os.listdir():
+        if (dr not in exclude):
+            if (os.path.isfile("./"+dr)):
+                file_list.append("./"+dr)
+            else:
+                dir_list.append("./"+dr)
+    print (file_list, dir_list)
+    file_list.sort(key=lambda a: a.split("_")[1].split(".")[0])
+    for afile in file_list:
+        compiler.append_file(afile)
+
+    dir_list.sort(key=lambda a: a.split("_")[1].split(".")[0])
+    for adir in dir_list:
+        os.chdir(adir)
+        compile(compiler, exclude)
+        os.chdir("../")
 
 def parse_input(creator, command, option):
     if command.command == "create":
@@ -149,56 +169,18 @@ def parse_input(creator, command, option):
     if command.command == "exit":
         sys.exit(0)
 
+    if command.command == "compile":
+        navigate_to(creator.get_project_name())
+        md_file = "./" + creator.get_project_name() + ".md"
+        creator.create_file(md_file)
+        compiler = Compiler(md_file)
+        compile(compiler, [creator.get_project_name()+".md"])
+
     return option
 
 
 
 ### CLASSES ###
-class Creator(object):
-    def __init__(self):
-        self.project_name = None
-        return
-
-    def set_project_name(self, name):
-        self.project_name = name
-
-    def get_project_name(self):
-        return self.project_name
-
-    def create_folder(self, name):
-        if not os.path.exists("./"+name):
-            os.makedirs("./"+name)
-            os.chdir("./"+name)
-
-    def open_folder(self, name):
-        if os.path.exists("./"+name):
-            os.chdir("./"+name)
-        if os.path.exists(name):
-            os.chdir(name)
-
-    def delete_folder(self, name):
-        if os.path.exists("./"+name):
-            shutil.rmtree("./"+name)
-
-    def open_file(self, name):
-        if sys.platform.startswith('darwin'):
-            subprocess.call(('open', "./"+name))
-        elif os.name == 'nt':
-            os.startfile("./"+name)
-        elif os.name == 'posix':
-            subprocess.call(('xdg-open', "./"+name))
-
-    def create_file(self, name):
-        if not os.path.exists("./"+name):
-            open(name, 'a')
-
-    def delete_file(self, name):
-        if os.path.exists("./"+name):
-            os.remove("./"+name)
-
-    def copy_file(self, name):
-        if os.path.exists(name):
-            shutil.copy2(name, "./")
 
 ### MAIN ###
 def main():
