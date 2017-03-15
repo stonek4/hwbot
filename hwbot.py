@@ -45,8 +45,8 @@ def display_options(which):
             input_args = input(" ~hwbot~: ").split(" ")
             output = parser.parse_args(input_args)
             break
-        except:
-            print ("")
+        except Exception as e:
+            print (e)
 
     return output
 
@@ -98,6 +98,7 @@ def compile(compiler, exclude):
     dir_list.sort(key=lambda a: a.split("_")[1].split(".")[0])
     for adir in dir_list:
         os.chdir(adir)
+        compiler.append_title("QUESTION " + adir.split("_")[1], 2)
         compile(compiler, exclude)
         os.chdir("../")
 
