@@ -32,10 +32,10 @@ def display_options(which):
     first_arg = ["create", "edit", "exit"]
     second_arg = []
 
-    print "Current Directory: " + os.getcwd()
+    print("Current Directory: " + os.getcwd())
     for proj_file in os.listdir("./"):
-        print proj_file
-    print ""
+        print(proj_file)
+    print("")
 
     if which == 1:
         second_arg += ["project"]
@@ -67,7 +67,8 @@ def display_options(which):
             output = parser.parse_args(input_args)
             break
         except Exception as e:
-            print e
+            print(e)
+            pass
 
     return output
 
@@ -115,7 +116,7 @@ def md_compile(compiler, exclude):
                 file_list.append("./" + adir)
             else:
                 dir_list.append("./" + adir)
-    print (file_list, dir_list)
+    print(file_list, dir_list)
     file_list.sort(key=lambda a: a.split("_")[1].split(".")[0])
     for afile in file_list:
         compiler.append_file(afile)
@@ -123,8 +124,15 @@ def md_compile(compiler, exclude):
     dir_list.sort(key=lambda a: a.split("_")[1].split(".")[0])
     for adir in dir_list:
         os.chdir(adir)
-        compiler.append_title("QUESTION " + adir.split("_")[1], 2)
-        compile(compiler, exclude)
+        numb = adir.split("_")[1]
+        if "SSQ" in adir:
+            compiler.append_title("SUB PART " + numb, 4)
+        elif "SQ" in adir:
+            compiler.append_title("PART " + numb, 3)
+        elif "Q" in adir:
+            compiler.append_title("QUESTION " + numb, 2)
+
+        md_compile(compiler, exclude)
         os.chdir("../")
 
 def parse_input(creator, command, option):
@@ -200,8 +208,9 @@ def parse_input(creator, command, option):
         navigate_to(creator.get_project_name())
         md_file = "./" + creator.get_project_name() + ".md"
         creator.create_file(md_file)
-        compiler = Compiler(md_file)
-        compile(compiler, [creator.get_project_name()+".md"])
+        author = input("Enter your name: ")
+        compiler = Compiler(md_file, creator.get_project_name(), author)
+        md_compile(compiler, [creator.get_project_name()+".md"])
 
     return option
 
